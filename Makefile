@@ -1,4 +1,6 @@
-.PHONY: up down build logs restart ps clean seed
+.PHONY: up down build logs restart ps clean dev dev-down dev-logs shell-backend shell-mongo
+
+# --- Production ---
 
 up:
 	docker compose up -d
@@ -40,3 +42,17 @@ shell-backend:
 
 shell-mongo:
 	docker compose exec mongo mongosh livesongbook
+
+# --- Development ---
+# Frontend: Vite dev server with HMR at http://localhost:5173
+# Backend:  uvicorn --reload at http://localhost:8000
+# Proxy:    vite.config.js forwards /api → backend:8000
+
+dev:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+dev-down:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+dev-logs:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f

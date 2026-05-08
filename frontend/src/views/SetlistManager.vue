@@ -172,5 +172,5 @@ async function deleteSetlist() {
 .sl-num { color: var(--text-muted); min-width: 20px; font-size: 12px; }
 
 .sl-edit-songs { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 280px; overflow-y: auto; }
-.sl-edit-row { display: flex; align-items: center; gap-8px; gap: 6px; padding: 6px 8px; background: var(--surface2); border-radius: 6px; font-size: 14px; }
+.sl-edit-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--surface2); border-radius: 6px; font-size: 14px; }
 </style>
