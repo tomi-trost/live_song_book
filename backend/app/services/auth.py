@@ -1,20 +1,20 @@
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
+# Hash the configured admin password once at startup
+_admin_hash: bytes = bcrypt.hashpw(settings.admin_password.encode(), bcrypt.gensalt())
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
 
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+def authenticate_admin(username: str, password: str) -> bool:
+    if username != settings.admin_username:
+        return False
+    return bcrypt.checkpw(password.encode(), _admin_hash)
 
 
 def create_access_token(data: dict) -> str:
@@ -22,13 +22,6 @@ def create_access_token(data: dict) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     to_encode["exp"] = expire
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
-
-
-def authenticate_admin(username: str, password: str) -> bool:
-    if username != settings.admin_username:
-        return False
-    hashed = hash_password(settings.admin_password)
-    return verify_password(password, hashed)
 
 
 async def get_current_admin(token: str = Depends(oauth2_scheme)) -> str:
