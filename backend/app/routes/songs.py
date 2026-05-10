@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends
+import json
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from bson import ObjectId
 from datetime import datetime, timezone
 from app.database import get_db
@@ -35,6 +36,51 @@ async def get_song(song_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Song not found")
     return _serialize(doc)
+
+
+@router.post("/import", status_code=201)
+async def import_songs(file: UploadFile = File(...), _: str = Depends(get_current_admin)):
+    raw = await file.read()
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid JSON: {e}")
+
+    if not isinstance(data, list):
+        raise HTTPException(status_code=422, detail="JSON must be an array of song objects")
+    if len(data) == 0:
+        raise HTTPException(status_code=422, detail="JSON array is empty")
+
+    errors = []
+    for i, item in enumerate(data):
+        if not isinstance(item, dict):
+            errors.append({"index": i, "error": "Each item must be a JSON object"})
+            continue
+        for field in ("title", "author", "content"):
+            if field not in item:
+                errors.append({"index": i, "error": f"Missing required field: '{field}'"})
+            elif not isinstance(item[field], str):
+                errors.append({"index": i, "error": f"Field '{field}' must be a string"})
+            elif not item[field].strip():
+                errors.append({"index": i, "error": f"Field '{field}' must not be empty"})
+
+    if errors:
+        raise HTTPException(status_code=422, detail={"message": "Validation failed", "errors": errors})
+
+    now = datetime.now(timezone.utc)
+    docs = [
+        {
+            "title": item["title"].strip(),
+            "author": item["author"].strip(),
+            "content": item["content"],
+            "created_at": now,
+            "updated_at": now,
+        }
+        for item in data
+    ]
+    db = get_db()
+    result = await db["songs"].insert_many(docs)
+    return {"imported": len(result.inserted_ids)}
 
 
 @router.post("", response_model=SongOut, status_code=201)

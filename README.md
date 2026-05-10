@@ -11,6 +11,7 @@
 - **Admin dashboard** — manage the song library, build setlists, and control the live display
 - **Setlist sequencer** — queue up songs for the night and step through them with prev/next
 - **PDF downloads** — upload song sheet PDFs the audience can grab straight from the public page
+- **Batch song import** — upload a JSON file through the admin panel to add multiple songs at once
 
 ## Tech stack
 
@@ -66,7 +67,7 @@ make shell-mongo    open mongosh on the database
 
 ## Song format
 
-Songs are stored as plain text with inline chords. See [SONG_FORMAT.md](SONG_FORMAT.md) for the full guide. Quick example:
+Songs are stored as plain text with inline chords. See [SONG_FORMAT.md](SONG_FORMAT.md) for the full guide, including how to prepare a JSON file for batch import. Quick example:
 
 ```
 # Verse 1

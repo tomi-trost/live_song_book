@@ -5,7 +5,24 @@
         <h1>Songs</h1>
         <p class="text-muted">{{ songs.length }} song{{ songs.length !== 1 ? 's' : '' }} in the library</p>
       </div>
-      <button class="btn-primary" @click="openCreate">+ Add song</button>
+      <div class="flex gap-2">
+        <button class="btn-secondary" @click="triggerImport">Import JSON</button>
+        <button class="btn-primary" @click="openCreate">+ Add song</button>
+      </div>
+      <input ref="importInput" type="file" accept=".json" style="display:none" @change="handleImport" />
+    </div>
+
+    <div v-if="importResult" :class="['import-banner', importResult.type]">
+      <div>{{ importResult.message }}</div>
+      <ul v-if="importResult.errors && importResult.errors.length" class="import-errors">
+        <li v-for="e in importResult.errors.slice(0, 10)" :key="e.index + e.error">
+          Song {{ e.index + 1 }}: {{ e.error }}
+        </li>
+        <li v-if="importResult.errors.length > 10" class="text-muted">
+          … and {{ importResult.errors.length - 10 }} more error(s)
+        </li>
+      </ul>
+      <button class="import-close" @click="importResult = null">✕</button>
     </div>
 
     <div class="search-bar">
@@ -76,6 +93,8 @@ const songs = ref([])
 const search = ref('')
 const saving = ref(false)
 const deleteTarget = ref(null)
+const importInput = ref(null)
+const importResult = ref(null)
 
 const modal = ref({ open: false, editing: false, id: null })
 const form = ref({ title: '', author: '', content: '' })
@@ -119,6 +138,35 @@ async function save() {
   }
 }
 
+function triggerImport() {
+  importResult.value = null
+  importInput.value.click()
+}
+
+async function handleImport(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  event.target.value = ''
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const { data } = await api.post('/api/songs/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    importResult.value = { type: 'success', message: `Successfully imported ${data.imported} song(s).` }
+    await load()
+  } catch (err) {
+    const detail = err.response?.data?.detail
+    if (detail && typeof detail === 'object' && detail.errors) {
+      importResult.value = { type: 'error', message: detail.message || 'Import failed.', errors: detail.errors }
+    } else {
+      importResult.value = { type: 'error', message: typeof detail === 'string' ? detail : 'Import failed. Check the file and try again.' }
+    }
+  }
+}
+
 function confirmDelete(song) {
   deleteTarget.value = song
 }
@@ -137,4 +185,26 @@ async function deleteSong() {
 .song-name { font-weight: 600; }
 .song-auth { font-size: 13px; margin-top: 2px; }
 .empty-state { text-align: center; padding: 40px; }
+.import-banner {
+  position: relative;
+  padding: 12px 40px 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.import-banner.success { background: #d1fae5; color: #065f46; }
+.import-banner.error { background: #fee2e2; color: #991b1b; }
+.import-errors { margin: 6px 0 0 16px; padding: 0; list-style: disc; }
+.import-errors li { margin-top: 2px; }
+.import-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.6;
+}
+.import-close:hover { opacity: 1; }
 </style>

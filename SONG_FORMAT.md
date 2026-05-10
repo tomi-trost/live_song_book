@@ -116,6 +116,49 @@ The following Tabdown features are intentionally not parsed and will be displaye
 
 ---
 
+## Batch JSON import
+
+Instead of adding songs one by one through the admin panel, you can upload a `.json` file containing multiple songs at once using the **Import JSON** button on the Songs page.
+
+### File format
+
+The file must be a JSON array where each element is an object with exactly these three fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `title` | string | Song title |
+| `author` | string | Artist or band name |
+| `content` | string | Song lyrics and chords in the tabdown format described above |
+
+All three fields are required and must not be empty. Any extra fields in the object are silently ignored.
+
+Use `\n` for newlines inside the `content` string (standard JSON string encoding).
+
+### Example
+
+```json
+[
+  {
+    "title": "Wonderful World",
+    "author": "Louis Armstrong",
+    "content": "# Verse 1\n[Am]I see trees of [F]green, [C]red roses too\n[Am]I see them [F]bloom for [C]me and [G]you\n\n# Chorus\n[C]What a [G7]wonderful [C]world"
+  },
+  {
+    "title": "Another Song",
+    "author": "Some Artist",
+    "content": "# Verse 1\n[G]Line one\n[Em]Line two"
+  }
+]
+```
+
+An example import file with five original songs is provided in `example_songs.json` at the root of the repository.
+
+### Error handling
+
+If the file cannot be parsed (invalid JSON), a required field is missing, or a field has the wrong type, the import is aborted entirely and the admin panel will display a list of errors pointing to the problematic song(s) by position. No songs are inserted on failure.
+
+---
+
 ## Tips
 
 - Copy-paste from Ultimate Guitar or similar sites works if you convert their above-lyric chord lines to inline style.
